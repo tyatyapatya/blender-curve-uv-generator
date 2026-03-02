@@ -1,0 +1,125 @@
+import bpy
+from bpy.types import Panel
+
+from .. import constants
+from ..gn.assign import get_applied_modifier
+from ..utils.context import active_curve_object
+
+DESIRED_INPUT_ORDER = (
+    "Profile Curve",
+    "Set Material",
+    "Path Resolution",
+    "Profile Resolution",
+    "Tile Length",
+    "Seam Rotate",
+    "Seam Offset",
+)
+
+
+def _socket_item_map(modifier):
+    if modifier is None or modifier.node_group is None:
+        return {}
+    sock_map = {}
+    for item in modifier.node_group.interface.items_tree:
+        if getattr(item, "item_type", None) != "SOCKET":
+            continue
+        if item.in_out != "INPUT":
+            continue
+        sock_map[item.name] = item
+    return sock_map
+
+
+def _draw_modifier_inputs(layout, modifier):
+    sock_map = _socket_item_map(modifier)
+
+    for name in DESIRED_INPUT_ORDER:
+        item = sock_map.get(name)
+        if item is None:
+            layout.label(text=f"Missing input: {name}", icon="ERROR")
+            continue
+
+        prop_path = f'["{item.identifier}"]'
+
+        if name == "Tile Length":
+            row = layout.row(align=True)
+            row.prop(modifier, prop_path, text=name)
+            row.operator("curve_uv_generator.auto_tile_length", text="Auto", icon="FILE_REFRESH")
+            continue
+
+        if item.socket_type == "NodeSocketObject":
+            try:
+                layout.prop_search(modifier, prop_path, bpy.data, "objects", text=name, icon="OUTLINER_OB_CURVE")
+            except Exception:
+                layout.prop(modifier, prop_path, text=name)
+        elif item.socket_type == "NodeSocketMaterial":
+            try:
+                layout.prop_search(modifier, prop_path, bpy.data, "materials", text=name, icon="MATERIAL")
+            except Exception:
+                layout.prop(modifier, prop_path, text=name)
+        else:
+            layout.prop(modifier, prop_path, text=name)
+
+
+class CUG_PT_main(Panel):
+    bl_label = "Curve UV Generator"
+    bl_idname = "CUG_PT_main"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Curve UV"
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.cug_settings
+        active_curve = active_curve_object(context)
+        modifier = get_applied_modifier(active_curve)
+
+        box = layout.box()
+        row = box.row()
+        row.scale_y = 1.2
+        row.operator("curve_uv_generator.apply_uv_setup", text="Generate UV", icon="GEOMETRY_NODES")
+
+        if constants.SHOW_SETTINGS_BOX:
+            box2 = layout.box()
+            box2.label(text="Settings")
+            box2.prop(settings, "node_group_name", text="Node Group")
+
+        box3 = layout.box()
+        box3.label(text="Parameters")
+        if active_curve is None:
+            box3.label(text="No active curve selected.", icon="INFO")
+            return
+        if modifier is None:
+            box3.label(text="Apply setup first to this curve.", icon="INFO")
+            return
+
+        _draw_modifier_inputs(box3, modifier)
+
+
+class CUG_PT_object_props(Panel):
+    bl_label = "Curve UV Generator"
+    bl_idname = "CUG_PT_object_props"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.cug_settings
+        active_curve = active_curve_object(context)
+        modifier = get_applied_modifier(active_curve)
+
+        layout.operator("curve_uv_generator.apply_uv_setup", text="Generate UV", icon="GEOMETRY_NODES")
+
+        if constants.SHOW_SETTINGS_BOX:
+            layout.prop(settings, "node_group_name", text="Node Group")
+
+        box = layout.box()
+        box.label(text="Parameters")
+        if active_curve is None:
+            box.label(text="No active curve selected.", icon="INFO")
+            return
+        if modifier is None:
+            box.label(text="Apply setup first to this curve.", icon="INFO")
+            return
+
+        _draw_modifier_inputs(box, modifier)
