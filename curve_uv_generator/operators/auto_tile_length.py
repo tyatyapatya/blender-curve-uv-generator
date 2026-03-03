@@ -4,20 +4,8 @@ from bpy.types import Context, Operator
 
 from .. import constants
 from ..gn.assign import get_applied_modifier
+from ..gn.interface import resolve_canonical_inputs
 from ..utils.context import active_curve_object
-
-
-def _input_socket_map(modifier):
-    if modifier is None or modifier.node_group is None:
-        return {}
-    sock_map = {}
-    for item in modifier.node_group.interface.items_tree:
-        if getattr(item, "item_type", None) != "SOCKET":
-            continue
-        if item.in_out != "INPUT":
-            continue
-        sock_map[item.name] = item
-    return sock_map
 
 
 def _curve_length(curve_obj) -> float:
@@ -130,8 +118,8 @@ class CUG_OT_auto_tile_length(Operator):
         modifier = get_applied_modifier(curve_obj)
         if modifier is None:
             return False
-        sock_map = _input_socket_map(modifier)
-        return "Tile Length" in sock_map and "Profile Curve" in sock_map
+        sockets = resolve_canonical_inputs(modifier)
+        return sockets.get("tile_length") is not None and sockets.get("profile_curve") is not None
 
     def execute(self, context: Context):
         curve_obj = active_curve_object(context)
@@ -144,10 +132,10 @@ class CUG_OT_auto_tile_length(Operator):
             self.report({"ERROR"}, "Apply setup first to this curve.")
             return {"CANCELLED"}
 
-        sock_map = _input_socket_map(modifier)
-        tile_sock = sock_map.get("Tile Length")
-        profile_sock = sock_map.get("Profile Curve")
-        material_sock = sock_map.get("Set Material")
+        sockets = resolve_canonical_inputs(modifier)
+        tile_sock = sockets.get("tile_length")
+        profile_sock = sockets.get("profile_curve")
+        material_sock = sockets.get("set_material")
 
         if tile_sock is None or profile_sock is None:
             self.report({"ERROR"}, "Required modifier inputs missing (Tile Length/Profile Curve).")

@@ -3,44 +3,37 @@ from bpy.types import Panel
 
 from .. import constants
 from ..gn.assign import get_applied_modifier
+from ..gn.interface import CANONICAL_SOCKET_ALIASES, resolve_canonical_inputs
 from ..utils.context import active_curve_object
 
 DESIRED_INPUT_ORDER = (
-    "Profile Curve",
-    "Set Material",
-    "Path Resolution",
-    "Profile Resolution",
-    "Tile Length",
-    "Seam Rotate",
-    "Seam Offset",
+    "profile_curve",
+    "set_material",
+    "path_resolution",
+    "profile_resolution",
+    "tile_length",
+    "seam_rotate",
+    "seam_offset",
 )
 
 
-def _socket_item_map(modifier):
-    if modifier is None or modifier.node_group is None:
-        return {}
-    sock_map = {}
-    for item in modifier.node_group.interface.items_tree:
-        if getattr(item, "item_type", None) != "SOCKET":
-            continue
-        if item.in_out != "INPUT":
-            continue
-        sock_map[item.name] = item
-    return sock_map
+def _display_name(key: str) -> str:
+    return CANONICAL_SOCKET_ALIASES[key][0]
 
 
 def _draw_modifier_inputs(layout, modifier):
-    sock_map = _socket_item_map(modifier)
+    resolved = resolve_canonical_inputs(modifier)
 
-    for name in DESIRED_INPUT_ORDER:
-        item = sock_map.get(name)
+    for key in DESIRED_INPUT_ORDER:
+        name = _display_name(key)
+        item = resolved.get(key)
         if item is None:
             layout.label(text=f"Missing input: {name}", icon="ERROR")
             continue
 
         prop_path = f'["{item.identifier}"]'
 
-        if name == "Tile Length":
+        if key == "tile_length":
             row = layout.row(align=True)
             row.prop(modifier, prop_path, text=name)
             row.operator("curve_uv_generator.auto_tile_length", text="Auto", icon="FILE_REFRESH")
