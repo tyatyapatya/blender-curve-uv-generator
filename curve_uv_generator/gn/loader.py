@@ -4,6 +4,7 @@ import bpy
 from bpy.types import NodeTree
 
 from .. import constants
+from .interface import ensure_legacy_profile_material_inputs
 
 
 class NodeGroupLoadError(RuntimeError):
@@ -33,5 +34,6 @@ def append_node_group_from_resource(node_group_name: str) -> NodeTree:
     if appended is None:
         raise NodeGroupLoadError(f"Failed to append node group '{node_group_name}'.")
 
+    ensure_legacy_profile_material_inputs(appended)
     appended[constants.NODE_GROUP_UID_PROP] = constants.NODE_GROUP_UID_VALUE
     return appended

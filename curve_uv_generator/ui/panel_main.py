@@ -39,12 +39,12 @@ def _draw_modifier_inputs(layout, modifier):
             row.operator("curve_uv_generator.auto_tile_length", text="Auto", icon="FILE_REFRESH")
             continue
 
-        if item.socket_type == "NodeSocketObject":
+        if key == "profile_curve":
             try:
                 layout.prop_search(modifier, prop_path, bpy.data, "objects", text=name, icon="OUTLINER_OB_CURVE")
             except Exception:
                 layout.prop(modifier, prop_path, text=name)
-        elif item.socket_type == "NodeSocketMaterial":
+        elif key == "set_material":
             try:
                 layout.prop_search(modifier, prop_path, bpy.data, "materials", text=name, icon="MATERIAL")
             except Exception:
