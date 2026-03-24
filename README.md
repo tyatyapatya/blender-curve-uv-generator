@@ -1,7 +1,4 @@
 # Blender Curve UV Generator
-
-Blender add-on that applies an existing Geometry Nodes setup (`Curve_UV.002`) to selected path curves.
-
 ## What this implementation does
 
 - Uses a bundled resource file: `curve_uv_generator/resources/gn_assets.blend`
