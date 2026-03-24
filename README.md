@@ -5,18 +5,14 @@ Blender add-on that applies an existing Geometry Nodes setup (`Curve_UV.002`) to
 ## What this implementation does
 
 - Uses a bundled resource file: `curve_uv_generator/resources/gn_assets.blend`
-- Appends the existing node group at runtime (`link=False`)
+- Appends the existing node group at runtime
 - Applies the group to selected curve objects via a Geometry Nodes modifier
 - Identifies managed node groups/modifiers with internal UID properties to avoid name-collision issues
 
 ## Install for testing
 
-1. Put your authored node group in:
-   - `curve_uv_generator/resources/gn_assets.blend`
-2. Ensure the node group name inside that file is exactly:
-   - `Curve_UV.002`
-3. Zip the `curve_uv_generator` folder.
-4. Install zip in Blender:
+1. Zip the `curve_uv_generator` folder.
+2. Install zip in Blender:
    - `Edit > Preferences > Add-ons > Install...`
 
 ## Learn the code structure
