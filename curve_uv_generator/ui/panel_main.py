@@ -3,7 +3,11 @@ from bpy.types import Panel
 
 from .. import constants
 from ..gn.assign import get_applied_modifier
-from ..gn.interface import CANONICAL_SOCKET_ALIASES, resolve_canonical_inputs
+from ..gn.interface import (
+    CANONICAL_SOCKET_ALIASES,
+    modifier_input_property,
+    resolve_canonical_inputs,
+)
 from ..utils.context import active_curve_object
 
 DESIRED_INPUT_ORDER = (
@@ -31,26 +35,46 @@ def _draw_modifier_inputs(layout, modifier):
             layout.label(text=f"Missing input: {name}", icon="ERROR")
             continue
 
-        prop_path = f'["{item.identifier}"]'
+        input_property = modifier_input_property(modifier, item.identifier)
+        if input_property is None:
+            input_data = modifier
+            prop_path = f'["{item.identifier}"]'
+        else:
+            input_data = input_property
+            prop_path = "value"
 
         if key == "tile_length":
             row = layout.row(align=True)
-            row.prop(modifier, prop_path, text=name)
+            row.prop(input_data, prop_path, text=name)
             row.operator("curve_uv_generator.auto_tile_length", text="Auto", icon="FILE_REFRESH")
             continue
 
         if key == "profile_curve":
             try:
-                layout.prop_search(modifier, prop_path, bpy.data, "objects", text=name, icon="OUTLINER_OB_CURVE")
+                layout.prop_search(
+                    input_data,
+                    prop_path,
+                    bpy.data,
+                    "objects",
+                    text=name,
+                    icon="OUTLINER_OB_CURVE",
+                )
             except Exception:
-                layout.prop(modifier, prop_path, text=name)
+                layout.prop(input_data, prop_path, text=name)
         elif key == "set_material":
             try:
-                layout.prop_search(modifier, prop_path, bpy.data, "materials", text=name, icon="MATERIAL")
+                layout.prop_search(
+                    input_data,
+                    prop_path,
+                    bpy.data,
+                    "materials",
+                    text=name,
+                    icon="MATERIAL",
+                )
             except Exception:
-                layout.prop(modifier, prop_path, text=name)
+                layout.prop(input_data, prop_path, text=name)
         else:
-            layout.prop(modifier, prop_path, text=name)
+            layout.prop(input_data, prop_path, text=name)
 
 
 class CUG_PT_main(Panel):

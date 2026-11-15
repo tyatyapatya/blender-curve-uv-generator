@@ -7,7 +7,19 @@ def _find_managed_modifier(obj: Object) -> Modifier | None:
     for mod in obj.modifiers:
         if mod.type != "NODES":
             continue
-        if mod.get(constants.MODIFIER_UID_PROP) == constants.MODIFIER_UID_VALUE:
+
+        try:
+            modifier_uid = mod.get(constants.MODIFIER_UID_PROP)
+        except TypeError:
+            modifier_uid = None
+        if modifier_uid == constants.MODIFIER_UID_VALUE:
+            return mod
+
+        node_group = mod.node_group
+        if (
+            node_group is not None
+            and node_group.get(constants.NODE_GROUP_UID_PROP) == constants.NODE_GROUP_UID_VALUE
+        ):
             return mod
     return None
 
@@ -25,7 +37,11 @@ def ensure_uv_modifier(obj: Object) -> Modifier:
         mod = _find_reusable_nodes_modifier(obj)
     if mod is None:
         mod = obj.modifiers.new(name=constants.MODIFIER_NAME, type="NODES")
-    mod[constants.MODIFIER_UID_PROP] = constants.MODIFIER_UID_VALUE
+    try:
+        mod[constants.MODIFIER_UID_PROP] = constants.MODIFIER_UID_VALUE
+    except TypeError:
+        # Blender 5.2 does not allow arbitrary ID properties on modifiers.
+        pass
     return mod
 
 

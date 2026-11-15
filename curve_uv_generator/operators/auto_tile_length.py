@@ -4,7 +4,11 @@ from bpy.types import Context, Operator
 
 from .. import constants
 from ..gn.assign import get_applied_modifier
-from ..gn.interface import resolve_canonical_inputs
+from ..gn.interface import (
+    get_modifier_input_value,
+    resolve_canonical_inputs,
+    set_modifier_input_value,
+)
 from ..utils.context import active_curve_object
 
 
@@ -68,8 +72,8 @@ def _snapped_tile_length(path_length: float, base_tile: float) -> tuple[float, i
 
 def _force_viewport_refresh(context: Context, curve_obj, modifier, tile_identifier: str, tile_value: float) -> None:
     # Nudge value to ensure depsgraph marks change in all contexts.
-    modifier[tile_identifier] = tile_value + 1e-6
-    modifier[tile_identifier] = tile_value
+    set_modifier_input_value(modifier, tile_identifier, tile_value + 1e-6)
+    set_modifier_input_value(modifier, tile_identifier, tile_value)
 
     # Toggle viewport flag to guarantee geometry re-evaluation.
     viewport_state = modifier.show_viewport
@@ -141,7 +145,7 @@ class CUG_OT_auto_tile_length(Operator):
             self.report({"ERROR"}, "Required modifier inputs missing (Tile Length/Profile Curve).")
             return {"CANCELLED"}
 
-        profile_obj = modifier.get(profile_sock.identifier)
+        profile_obj = get_modifier_input_value(modifier, profile_sock.identifier)
         if profile_obj is None:
             self.report({"ERROR"}, "Set Profile Curve first.")
             return {"CANCELLED"}
@@ -154,7 +158,11 @@ class CUG_OT_auto_tile_length(Operator):
             self.report({"ERROR"}, "Profile Curve length is zero.")
             return {"CANCELLED"}
 
-        material = modifier.get(material_sock.identifier) if material_sock else None
+        material = (
+            get_modifier_input_value(modifier, material_sock.identifier)
+            if material_sock
+            else None
+        )
         aspect = _material_aspect_ratio(material)
         tile_length = max(perimeter * aspect, 1e-6)
 
@@ -164,7 +172,7 @@ class CUG_OT_auto_tile_length(Operator):
             if path_length > 1e-9:
                 tile_length, repeats = _snapped_tile_length(path_length, tile_length)
 
-        modifier[tile_sock.identifier] = tile_length
+        set_modifier_input_value(modifier, tile_sock.identifier, tile_length)
         _force_viewport_refresh(context, curve_obj, modifier, tile_sock.identifier, tile_length)
 
         snap_info = _format_snap_info(constants.AUTO_TILE_SNAP_REPEATS, repeats)

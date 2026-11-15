@@ -303,3 +303,31 @@ def ensure_legacy_profile_material_inputs(node_group: NodeTree | None) -> bool:
             changed = True
 
     return changed
+
+
+def modifier_input_property(modifier: Modifier, identifier: str):
+    properties = getattr(modifier, "properties", None)
+    inputs = getattr(properties, "inputs", None)
+    input_property = getattr(inputs, identifier, None) if inputs is not None else None
+    if input_property is not None and hasattr(input_property, "value"):
+        return input_property
+    return None
+
+
+def get_modifier_input_value(modifier: Modifier, identifier: str):
+    input_property = modifier_input_property(modifier, identifier)
+    if input_property is not None:
+        return input_property.value
+
+    try:
+        return modifier.get(identifier)
+    except TypeError:
+        return None
+
+
+def set_modifier_input_value(modifier: Modifier, identifier: str, value) -> None:
+    input_property = modifier_input_property(modifier, identifier)
+    if input_property is not None:
+        input_property.value = value
+    else:
+        modifier[identifier] = value
